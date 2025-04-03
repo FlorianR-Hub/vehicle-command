@@ -1,5 +1,7 @@
 FROM golang:1.23.0 AS build
 
+USER root
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
