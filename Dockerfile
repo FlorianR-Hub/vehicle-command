@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 RUN mkdir build
-RUN --mount=type=secret,id=fleet-key_pem,dst=/etc/secrets/fleet-key.pem cat /etc/secrets/fleet-key.pem
+RUN --mount=type=secret,id=fleet-key_pem,dst=/etc/secrets/fleet-key.pem cp /etc/secrets/fleet-key.pem build
 RUN --mount=type=secret,id=fleet-key_pem,dst=/etc/secrets/fleet-key.pem \
     --mount=type=secret,id=tls-cert_pem,dst=/etc/secrets/tls-cert.pem \
     --mount=type=secret,id=tls-key_pem,dst=/etc/secrets/tls-key.pem \
