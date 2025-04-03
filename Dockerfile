@@ -1,7 +1,5 @@
 FROM golang:1.23.0 AS build
 
-USER root
-
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -9,6 +7,7 @@ RUN go mod download
 
 COPY . .
 
+RUN --mount=type=secret,id=fleet-key.pem,dst=/etc/secrets/fleet-key.pem
 RUN mkdir build
 RUN go build -o ./build ./...
 
