@@ -8,10 +8,7 @@ RUN go mod download
 COPY . .
 
 RUN mkdir build
-RUN --mount=type=secret,id=fleet-key_pem,dst=/etc/secrets/fleet-key.pem \
-     --mount=type=secret,id=tls-cert_pem,dst=/etc/secrets/tls-cert.pem \
-     --mount=type=secret,id=tls-key_pem,dst=/etc/secrets/tls-key.pem \
-     go build -o ./build ./...
+RUN go build -o ./build ./...
 
 FROM gcr.io/distroless/base-debian12:nonroot AS runtime
 
