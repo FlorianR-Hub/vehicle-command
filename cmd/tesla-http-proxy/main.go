@@ -136,7 +136,7 @@ func main() {
 	// authorized, invoke p.ServeHTTP. Finally, replace p in the below ListenAndServeTLS call with
 	// an object of your newly created type.
 	//log.Error("Server stopped: %s", http.ListenAndServeTLS(addr, httpConfig.certFilename, httpConfig.keyFilename, p))
-	if port == 80 || port == 8080 {
+	if httpConfig.port == 80 || httpConfig.port == 8080 {
 		log.Error("Server stopped: %s", http.ListenAndServe(addr, p))
 	} else {
 		log.Error("Server stopped: %s", http.ListenAndServeTLS(addr, httpConfig.certFilename, httpConfig.keyFilename, p))
