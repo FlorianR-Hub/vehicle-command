@@ -290,6 +290,10 @@ func (p *Proxy) forwardRequest(acct *account.Account, w http.ResponseWriter, req
 	}
 }
 
+// Expression régulière pour matcher les chemins protégés contenant un VIN
+// Matches /api/1/vehicles/ANY_VIN_LIKE_STRING/(fleet_telemetry_config|fleet_telemetry_errors)
+var protectedPathWithVinRegex = regexp.MustCompile(`^/api/1/vehicles/([A-Za-z0-9]{17})/(fleet_telemetry_config|fleet_telemetry_errors)$`)
+
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Info("Received %s request for %s", req.Method, req.URL.Path)
 
@@ -297,6 +301,36 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		p.handleHealthCheck(w, req)
 		return
 	}
+
+	expectedInternalSecret := os.Getenv("PROXY_INTERNAL_SECRET")
+	isProtectedEndpoint := false // Initialiser à false
+
+	// Vérifier si le chemin correspond à l'un des patterns protégés
+	if protectedPathWithVinRegex.MatchString(req.URL.Path) {
+		isProtectedEndpoint = true
+		log.Debugf("Path %s matched protected pattern.", req.URL.Path)
+	}
+
+	if isProtectedEndpoint {
+		// Si aucun secret n'est configuré sur le serveur, logguer une erreur et refuser (sécurité par défaut)
+		if expectedInternalSecret == "" {
+			log.Error("CRITICAL: PROXY_INTERNAL_SECRET environment variable is not set. Denying protected endpoint access.")
+			writeJSONError(w, http.StatusInternalServerError, errors.New("internal server configuration error"))
+			return
+		}
+
+		// Récupérer le secret fourni par le client
+		clientSecret := req.Header.Get("X-Internal-Secret") // Utiliser un en-tête personnalisé
+
+		// Vérifier si le secret correspond
+		if clientSecret != expectedInternalSecret {
+			log.Warning("Forbidden access attempt to %s: Invalid or missing X-Internal-Secret header.", req.URL.Path)
+			writeJSONError(w, http.StatusForbidden, errors.New("access denied: missing or incorrect internal secret"))
+			return // Arrêter le traitement
+		}
+		log.Info("Internal secret verified successfully for protected endpoint.")
+	}
+	// L'exécution continue si ce n'est pas un endpoint protégé OU si le secret est valide
 
 	acct, err := getAccount(req)
 	if err != nil {
