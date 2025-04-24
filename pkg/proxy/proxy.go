@@ -314,7 +314,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if pathMatchesVinPattern || pathMatchesExactPattern {
 		isProtectedEndpoint = true
-		log.Debugf("Path %s matched a protected pattern.", req.URL.Path)
+		log.Debug("Path %s matched a protected pattern.", req.URL.Path)
 	}
 
 	if isProtectedEndpoint {
