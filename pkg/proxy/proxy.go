@@ -292,9 +292,10 @@ func (p *Proxy) forwardRequest(acct *account.Account, w http.ResponseWriter, req
 	}
 }
 
-// Expression régulière pour matcher les chemins protégés contenant un VIN
-// Matches /api/1/vehicles/ANY_VIN_LIKE_STRING/(fleet_telemetry_config|fleet_telemetry_errors)
+// Regex pour les chemins AVEC VIN
 var protectedPathWithVinRegex = regexp.MustCompile(`^/api/1/vehicles/([A-Za-z0-9]{17})/(fleet_telemetry_config|fleet_telemetry_errors)$`)
+// Chemin exact SANS VIN à protéger
+const protectedPathWithoutVin = "/api/1/vehicles/fleet_telemetry_config"
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Info("Received %s request for %s", req.Method, req.URL.Path)
@@ -308,9 +309,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	isProtectedEndpoint := false // Initialiser à false
 
 	// Vérifier si le chemin correspond à l'un des patterns protégés
-	if protectedPathWithVinRegex.MatchString(req.URL.Path) {
+	pathMatchesVinPattern := protectedPathWithVinRegex.MatchString(req.URL.Path)
+	pathMatchesExactPattern := (req.URL.Path == protectedPathWithoutVin)
+
+	if pathMatchesVinPattern || pathMatchesExactPattern {
 		isProtectedEndpoint = true
-		log.Debug("Path %s matched protected pattern.", req.URL.Path)
+		log.Debugf("Path %s matched a protected pattern.", req.URL.Path)
 	}
 
 	if isProtectedEndpoint {
@@ -327,7 +331,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// Vérifier si le secret correspond
 		if clientSecret != expectedInternalSecret {
 			log.Warning("Forbidden access attempt to %s: Invalid or missing X-Internal-Secret header.", req.URL.Path)
-			writeJSONError(w, http.StatusForbidden, errors.New("access denied: missing or incorrect internal secret"))
+			writeJSONError(w, http.StatusForbidden, errors.New("access denied"))
 			return // Arrêter le traitement
 		}
 		log.Info("Internal secret verified successfully for protected endpoint.")
