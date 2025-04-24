@@ -9,7 +9,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -308,7 +310,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Vérifier si le chemin correspond à l'un des patterns protégés
 	if protectedPathWithVinRegex.MatchString(req.URL.Path) {
 		isProtectedEndpoint = true
-		log.Debugf("Path %s matched protected pattern.", req.URL.Path)
+		log.Debug("Path %s matched protected pattern.", req.URL.Path)
 	}
 
 	if isProtectedEndpoint {
