@@ -292,8 +292,15 @@ func (p *Proxy) forwardRequest(acct *account.Account, w http.ResponseWriter, req
 	}
 }
 
-// Regex pour les chemins AVEC VIN
-var protectedPathWithVinRegex = regexp.MustCompile(`^/api/1/vehicles/([A-Za-z0-9]{17})/(fleet_telemetry_config|fleet_telemetry_errors)$`)
+// Matches /api/1/vehicles/VIN_OR_ID/(fleet_telemetry_config|fleet_telemetry_errors|command/COMMAND_NAME|wake_up)
+// Groupe 1: VIN ou ID
+// Groupe 2: Sous-chemin exact (config, errors, wake_up) ou "command/NOM_COMMANDE"
+var protectedPathWithVinRegex = regexp.MustCompile(`^/api/1/vehicles/([A-Za-z0-9\-\_]{17,})/(` +
+	`fleet_telemetry_config|` +
+	`fleet_telemetry_errors|` +
+	`wake_up|` +
+	`(command/[^/]+)` +
+	`)$`)
 // Chemin exact SANS VIN à protéger
 const protectedPathWithoutVin = "/api/1/vehicles/fleet_telemetry_config"
 
