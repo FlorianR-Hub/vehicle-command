@@ -1,0 +1,34 @@
+# fly.toml
+
+app = "tesla-http-proxy"
+primary_region = "ams"
+
+[build]
+
+[env]
+  # Le proxy doit écouter sur toutes les interfaces internes
+  TESLA_HTTP_PROXY_HOST = "0.0.0.0"
+  # Port interne sur lequel le proxy écoutera en HTTP (Fly gère le TLS externe)
+  TESLA_HTTP_PROXY_PORT = "443"
+  # Activer les logs détaillés pour le débogage initial
+  TESLA_VERBOSE = "true"
+  # (Optionnel) Définir un timeout pour les appels aux serveurs Tesla
+  TESLA_HTTP_PROXY_TIMEOUT = "30s"
+  # (Optionnel) Définir un fichier de cache
+  TESLA_CACHE_FILE = "/tmp/tesla-cache.json"
+
+[[services]]
+  auto_start_machines = true
+  auto_stop_machines = 'suspend'
+  min_machines_running = 0
+  protocol = "tcp"
+  internal_port = 443
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 443
+    
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
