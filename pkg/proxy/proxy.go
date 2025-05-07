@@ -9,7 +9,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -290,6 +292,18 @@ func (p *Proxy) forwardRequest(acct *account.Account, w http.ResponseWriter, req
 	}
 }
 
+// Matches /api/1/vehicles/VIN_OR_ID/(fleet_telemetry_config|fleet_telemetry_errors|command/COMMAND_NAME|wake_up)
+// Groupe 1: VIN ou ID
+// Groupe 2: Sous-chemin exact (config, errors, wake_up) ou "command/NOM_COMMANDE"
+var protectedPathWithVinRegex = regexp.MustCompile(`^/api/1/vehicles/([A-Za-z0-9\-\_]{17,})/(` +
+	`fleet_telemetry_config|` +
+	`fleet_telemetry_errors|` +
+	`wake_up|` +
+	`(command/[^/]+)` +
+	`)$`)
+// Chemin exact SANS VIN à protéger
+const protectedPathWithoutVin = "/api/1/vehicles/fleet_telemetry_config"
+
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Info("Received %s request for %s", req.Method, req.URL.Path)
 
@@ -297,6 +311,39 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		p.handleHealthCheck(w, req)
 		return
 	}
+
+	expectedInternalSecret := os.Getenv("PROXY_INTERNAL_SECRET")
+	isProtectedEndpoint := false // Initialiser à false
+
+	// Vérifier si le chemin correspond à l'un des patterns protégés
+	pathMatchesVinPattern := protectedPathWithVinRegex.MatchString(req.URL.Path)
+	pathMatchesExactPattern := (req.URL.Path == protectedPathWithoutVin)
+
+	if pathMatchesVinPattern || pathMatchesExactPattern {
+		isProtectedEndpoint = true
+		log.Debug("Path %s matched a protected pattern.", req.URL.Path)
+	}
+
+	if isProtectedEndpoint {
+		// Si aucun secret n'est configuré sur le serveur, logguer une erreur et refuser (sécurité par défaut)
+		if expectedInternalSecret == "" {
+			log.Error("CRITICAL: PROXY_INTERNAL_SECRET environment variable is not set. Denying protected endpoint access.")
+			writeJSONError(w, http.StatusInternalServerError, errors.New("internal server configuration error"))
+			return
+		}
+
+		// Récupérer le secret fourni par le client
+		clientSecret := req.Header.Get("X-Internal-Secret") // Utiliser un en-tête personnalisé
+
+		// Vérifier si le secret correspond
+		if clientSecret != expectedInternalSecret {
+			log.Warning("Forbidden access attempt to %s: Invalid or missing X-Internal-Secret header.", req.URL.Path)
+			writeJSONError(w, http.StatusForbidden, errors.New("access denied"))
+			return // Arrêter le traitement
+		}
+		log.Info("Internal secret verified successfully for protected endpoint.")
+	}
+	// L'exécution continue si ce n'est pas un endpoint protégé OU si le secret est valide
 
 	acct, err := getAccount(req)
 	if err != nil {
