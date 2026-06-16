@@ -196,6 +196,27 @@ func ExtractCommandAction(ctx context.Context, command string, params RequestPar
 			}
 		}
 		return func(v *vehicle.Vehicle) error { return v.OpenTrunk(ctx) }, nil
+	case "actuate_door":
+		door, err := params.getString("door", true)
+		if err != nil {
+			return nil, err
+		}
+		var doorClosure vehicle.Closure
+		switch door {
+		case "front_driver":
+			doorClosure = vehicle.ClosureFrontDriverDoor
+		case "front_passenger":
+			doorClosure = vehicle.ClosureFrontPassengerDoor
+		case "rear_driver":
+			doorClosure = vehicle.ClosureRearDriverDoor
+		case "rear_passenger":
+			doorClosure = vehicle.ClosureRearPassengerDoor
+		default:
+			return nil, &protocol.NominalError{Details: protocol.NewError("invalid_value", false, false)}
+		}
+		return func(v *vehicle.Vehicle) error { return v.OpenDoor(ctx, doorClosure) }, nil
+	case "actuate_all_doors":
+		return func(v *vehicle.Vehicle) error { return v.OpenAllDoors(ctx) }, nil
 	case "charge_port_door_open":
 		return func(v *vehicle.Vehicle) error { return v.ChargePortOpen(ctx) }, nil
 	case "charge_port_door_close":

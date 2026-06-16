@@ -27,6 +27,18 @@ func (v *Vehicle) CloseTrunk(ctx context.Context) error {
 func (v *Vehicle) OpenFrunk(ctx context.Context) error {
 	return v.executeClosureAction(ctx, vcsec.ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE, ClosureFrunk)
 }
+
+// OpenDoor opens (pops) a specific door. door must be one of FrontDriverDoor,
+// FrontPassengerDoor, RearDriverDoor, or RearPassengerDoor.
+func (v *Vehicle) OpenDoor(ctx context.Context, door Closure) error {
+	return v.executeClosureAction(ctx, vcsec.ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE, door)
+}
+
+// OpenAllDoors opens (pops) all four doors on the vehicle.
+func (v *Vehicle) OpenAllDoors(ctx context.Context) error {
+	return v.executeClosureAction(ctx, vcsec.ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE, ClosureAllDoors)
+}
+
 func (v *Vehicle) HonkHorn(ctx context.Context) error {
 	return v.executeCarServerAction(ctx,
 		&carserver.Action_VehicleAction{

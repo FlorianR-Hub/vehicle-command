@@ -209,9 +209,14 @@ func (v *Vehicle) AutoSecureVehicle(ctx context.Context) error {
 type Closure string
 
 const (
-	ClosureTrunk   Closure = "trunk"
-	ClosureFrunk   Closure = "frunk"
-	ClosureTonneau Closure = "tonneau"
+	ClosureTrunk            Closure = "trunk"
+	ClosureFrunk            Closure = "frunk"
+	ClosureTonneau          Closure = "tonneau"
+	ClosureFrontDriverDoor  Closure = "front_driver"
+	ClosureFrontPassengerDoor Closure = "front_passenger"
+	ClosureRearDriverDoor   Closure = "rear_driver"
+	ClosureRearPassengerDoor Closure = "rear_passenger"
+	ClosureAllDoors         Closure = "all_doors"
 )
 
 func (v *Vehicle) executeClosureAction(ctx context.Context, action vcsec.ClosureMoveType_E, closure Closure) error {
@@ -231,6 +236,19 @@ func (v *Vehicle) executeClosureAction(ctx context.Context, action vcsec.Closure
 		request.FrontTrunk = action
 	case ClosureTonneau:
 		request.Tonneau = action
+	case ClosureFrontDriverDoor:
+		request.FrontDriverDoor = action
+	case ClosureFrontPassengerDoor:
+		request.FrontPassengerDoor = action
+	case ClosureRearDriverDoor:
+		request.RearDriverDoor = action
+	case ClosureRearPassengerDoor:
+		request.RearPassengerDoor = action
+	case ClosureAllDoors:
+		request.FrontDriverDoor = action
+		request.FrontPassengerDoor = action
+		request.RearDriverDoor = action
+		request.RearPassengerDoor = action
 	}
 
 	payload := vcsec.UnsignedMessage{
