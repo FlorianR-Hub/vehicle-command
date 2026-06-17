@@ -18,15 +18,16 @@ primary_region = "ams"
   TESLA_CACHE_FILE = "/tmp/tesla-cache.json"
 
 [[services]]
-  auto_start_machines = true
-  auto_stop_machines = 'suspend'
-  min_machines_running = 0
+  auto_start_machines = false
+  auto_stop_machines = 'off'
+  min_machines_running = 1
   protocol = "tcp"
   internal_port = 443
   processes = ["app"]
 
   [[services.ports]]
     port = 443
+    handlers = []
     
 [[vm]]
   memory = '256mb'
